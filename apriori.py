@@ -103,11 +103,6 @@ class Apriori(object):
             t = tuple(s)
             self.frequentSets[t] = self.getCount(t)[0]
 
-    def printFrequentItemSets(self):
-        print "==Frequent itemsets (min_sup=70%)"
-        sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
-        table = ((",".join(s), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
-        print tabulate(table, headers=["ItemSets", "Count", "Support (%)"])
 
     def generateFrequentItemSets(self):
         candidateSet = map(lambda x: set([x]), self.valueMap.keys())
@@ -133,13 +128,25 @@ class Apriori(object):
                 if conf > self.confidence:
                     self.assocrules.append((lhs, rhs, conf, supp))
 
+
+    def printFrequentItemSets(self):
+        print "==Frequent itemsets (min_sup=70%)"
+        sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
+        table = ((",".join(map(self.getReadableContent, s)), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
+        print tabulate(table, headers=["ItemSets", "Count", "Support (%)"])
+
     def printAssociationRules(self):
         print "\n\n==High-confidence association rules (min_conf=%.2f%%)" % (100 * self.confidence)
         sortedRules = sorted(self.assocrules, key=operator.itemgetter(2), reverse=True)
         table = []
         for lhs, rhs, conf, supp in sortedRules:
-            table.append((",".join(lhs), "=>", rhs, "%.2f%%" % (100 * conf), "%.2f%%" % (100 * supp)))
+            l = map(self.getReadableContent, lhs)
+            table.append((",".join(l), "=>", self.getReadableContent(rhs),
+                          "%.2f%%" % (100 * conf), "%.2f%%" % (100 * supp)))
         print tabulate(table, headers=["LHS", "", "RHS", "Confidence", "Support"])
+
+    def getReadableContent(self, value):
+        return self.valueMap[value] + " = " + value
 
 if __name__ == "__main__":
     apriori = Apriori(dbfile="data.db", dbname="school",

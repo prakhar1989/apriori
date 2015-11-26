@@ -1,0 +1,49 @@
+==Frequent itemsets (min_sup=70%)
+ItemSets                                             Count    Support (%)
+-------------------------------------------------  -------  -------------
+env_grade = A2                                         507          34.19
+env_grade = B2                                         502          33.85
+overall_grade = B1                                     496          33.45
+overall_grade = C1                                     471          31.76
+perf_grade = C3                                        430          29
+overall_grade = A1                                     428          28.86
+perf_grade = D3                                        364          24.54
+perf_grade = B3                                        305          20.57
+env_grade = C2                                         264          17.8
+overall_grade = A1,env_grade = A2                      245          16.52
+perf_grade = C3,overall_grade = B1                     219          14.77
+perf_grade = A3                                        218          14.7
+overall_grade = C1,perf_grade = D3                     212          14.3
+overall_grade = B1,env_grade = B2                      188          12.68
+overall_grade = A1,perf_grade = A3                     174          11.73
+env_grade = A2,overall_grade = B1                      170          11.46
+perf_grade = F3                                        166          11.19
+overall_grade = C1,env_grade = B2                      166          11.19
+perf_grade = C3,env_grade = B2                         163          10.99
+perf_grade = C3,env_grade = A2                         152          10.25
+overall_grade = A1,perf_grade = B3                     149          10.05
+env_grade = D2                                         145           9.78
+env_grade = A2,perf_grade = B3                         136           9.17
+overall_grade = A1,env_grade = B2                      133           8.97
+perf_grade = D3,env_grade = B2                         129           8.7
+overall_grade = B1,perf_grade = B3                     122           8.23
+perf_grade = A3,env_grade = A2                         121           8.16
+perf_grade = C3,overall_grade = C1                     119           8.02
+env_grade = C2,overall_grade = C1                      117           7.89
+overall_grade = A1,perf_grade = A3,env_grade = A2      110           7.42
+env_grade = B2,perf_grade = B3                         103           6.95
+overall_grade = C1,perf_grade = F3                     101           6.81
+overall_grade = B1,perf_grade = D3                     100           6.74
+
+
+==High-confidence association rules (min_conf=50.00%)
+LHS                                     RHS                 Confidence    Support
+----------------------------------  --  ------------------  ------------  ---------
+perf_grade = A3,env_grade = A2      =>  overall_grade = A1  90.91%        7.42%
+perf_grade = A3                     =>  overall_grade = A1  79.82%        11.73%
+overall_grade = A1,perf_grade = A3  =>  env_grade = A2      63.22%        7.42%
+perf_grade = F3                     =>  overall_grade = C1  60.84%        6.81%
+perf_grade = D3                     =>  overall_grade = C1  58.24%        14.30%
+overall_grade = A1                  =>  env_grade = A2      57.24%        16.52%
+perf_grade = A3                     =>  env_grade = A2      55.50%        8.16%
+perf_grade = C3                     =>  overall_grade = B1  50.93%        14.77%
