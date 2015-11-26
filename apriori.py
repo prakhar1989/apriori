@@ -12,6 +12,8 @@ class Apriori(object):
         self.support = 100 # 10%
         self.frequentSets = {}
         self.totalSize = self.getTotalCount()[0]
+        self.confidence = 0.5
+        self.assocrules = []
 
     def getTotalCount(self):
         return self.runFetchOne("select count(*) from %s" % self.dbname)
@@ -102,6 +104,7 @@ class Apriori(object):
             self.frequentSets[t] = self.getCount(t)[0]
 
     def printFrequentItemSets(self):
+        print "==Frequent itemsets (min_sup=70%)"
         sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
         table = ((",".join(s), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
         print tabulate(table, headers=["ItemSets", "Count", "Support (%)"])
@@ -115,12 +118,35 @@ class Apriori(object):
             candidateSet = self.getNextCandidates(frequentSet, currentSize)
             currentSize += 1
 
+    def getSupportForRule(self, lhs, rhs):
+        s1 = self.getCount(tuple(lhs))[0]
+        s2 = self.getCount(tuple(list(lhs) + [rhs]))[0]
+        return float(s2)/s1, float(s2)/self.totalSize
+
+    def buildAssociationRules(self):
+        candidates = filter(lambda x: len(x) > 1, self.frequentSets.keys())
+        for candidate in candidates:
+            for x in candidate:
+                c = set(candidate)
+                lhs, rhs = c.difference(set([x])), x
+                conf, supp = self.getSupportForRule(lhs, rhs)
+                if conf > self.confidence:
+                    self.assocrules.append((lhs, rhs, conf, supp))
+
+    def printAssociationRules(self):
+        print "\n\n==High-confidence association rules (min_conf=%.2f%%)" % (100 * self.confidence)
+        sortedRules = sorted(self.assocrules, key=operator.itemgetter(2), reverse=True)
+        table = []
+        for lhs, rhs, conf, supp in sortedRules:
+            table.append((",".join(lhs), "=>", rhs, "%.2f%%" % (100 * conf), "%.2f%%" % (100 * supp)))
+        print tabulate(table, headers=["LHS", "", "RHS", "Confidence", "Support"])
+
 if __name__ == "__main__":
     apriori = Apriori(dbfile="data.db", dbname="school",
-                      categories=["overall_grade",
-                                  "env_grade",
-                                  "perf_grade"])
+                      categories=["overall_grade", "env_grade", "perf_grade"])
 
     apriori.generateFrequentItemSets()
     apriori.printFrequentItemSets()
+    apriori.buildAssociationRules()
+    apriori.printAssociationRules()
 
