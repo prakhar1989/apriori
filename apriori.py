@@ -19,6 +19,9 @@ def stdout_redirected(new_stdout):
         sys.stdout = save_stdout
 
 class Apriori(object):
+    """ The Apriori class that implements the apiori algorithm for
+    mining association rules from a database
+    """
     def __init__(self, dbfile, dbname, categories, threshold, confidence):
         self.conn = sqlite3.connect(dbfile)
         self.dbname = dbname
@@ -26,15 +29,14 @@ class Apriori(object):
         self.categoryMap, self.valueMap = self.initMapping()
         self.threshold = threshold
         self.frequentSets = {}
-        self.totalSize = self.getTotalCount()[0]
+        self.totalSize = self.runFetchOne("select count(*) from %s" % self.dbname)[0]
         self.support = int(threshold * self.totalSize)
         self.confidence = confidence
         self.assocrules = []
 
-    def getTotalCount(self):
-        return self.runFetchOne("select count(*) from %s" % self.dbname)
-
     def initMapping(self):
+        # builds the mapping of fields to columns and vice-versa to help with faster
+        # lookups in the rest of the algorithm
         categoryMap, valueMap = {}, {}
         for col in self.columns:
             values = self.runFetchAll("select distinct %s from %s" % (col, self.dbname))
@@ -45,14 +47,18 @@ class Apriori(object):
         return categoryMap, valueMap
 
     def runFetchAll(self, query):
+        # utility method for running a query against the sqlite database
         c = self.conn.cursor()
         return c.execute(query).fetchall()
 
     def runFetchOne(self, query):
+        # utility method for running a query against the sqlite database
         c = self.conn.cursor()
         return c.execute(query).fetchone()
 
     def getFrequentItemSets(self, candidateSets):
+        # generates the frequent item set for the current candidate set
+        # From the paper, this returns Ln for Cn
         frequentSets = []
         for s in candidateSets:
             count = self.getCount(tuple(s))[0]
@@ -60,11 +66,12 @@ class Apriori(object):
                 frequentSets.append(s)
         return frequentSets
 
-    # utility function for reducing over an iterable of sets
     def convertToSet(self, iterable):
+        # utility function for reducing over an iterable of sets
         return reduce(lambda x, y: x.union(y), iterable)
 
     def hasUniqueCategories(self, values):
+        # utility method to check if a list of values all belong to the same column
         return len(values) == len(set([self.valueMap[v] for v in values]))
 
     def getNextCandidates(self, candidates, size=2):
@@ -95,8 +102,8 @@ class Apriori(object):
                 newCandidates.append(s)
         return newCandidates
 
-    """ returns the count of a n-ary tuple e.g. getCount(("A2", "B3")) """
     def getCount(self, values):
+        # returns the count of a n-ary tuple e.g. getCount(("A2", "B3"))
         m = {} # build the mapping 
         for v in values:
             for cat, items in self.categoryMap.iteritems():
@@ -106,34 +113,35 @@ class Apriori(object):
         return self.runFetchOne(query)
 
     def generateQuery(self, **kwargs):
+        # utility method that generates a SQL query based on the keyword arguments provided
         clause = " and ".join(["%s = '%s'" % (k, v) for (k, v) in kwargs.iteritems()])
         return "select count(*) from %s where %s" % (self.dbname, clause)
 
-    def validateSets(self, sets):
-        for s in sets:
-            count = self.getCount(tuple(s))[0]
-            print s, count, count > self.support
-
-    def saveFrequentSet(self, sets):
-        for s in sets:
-            t = tuple(s)
-            self.frequentSets[t] = self.getCount(t)[0]
-
     def generateFrequentItemSets(self):
+        # generates all sets of frequent itemsets from the dataset
         candidateSet = map(lambda x: set([x]), self.valueMap.keys())
         currentSize = 2
         while len(candidateSet):
             frequentSet = self.getFrequentItemSets(candidateSet)
-            self.saveFrequentSet(frequentSet)
+            for s in frequentSet:
+                t = tuple(s)
+                self.frequentSets[t] = self.getCount(t)[0]
             candidateSet = self.getNextCandidates(frequentSet, currentSize)
             currentSize += 1
 
     def getSupportForRule(self, lhs, rhs):
+        """ utility method that computes the support and confidence
+        for a association rule lhs => rhs """
         s1 = self.getCount(tuple(lhs))[0]
         s2 = self.getCount(tuple(list(lhs) + [rhs]))[0]
         return float(s2)/s1, float(s2)/self.totalSize
 
+    def getReadableContent(self, value):
+        # utility missed to get a readable value of a value
+        return self.valueMap[value] + " = " + value[0]
+
     def buildAssociationRules(self):
+        # the primary workhorse method that generates the association rules
         candidates = filter(lambda x: len(x) > 1, self.frequentSets.keys())
         for candidate in candidates:
             for x in candidate:
@@ -143,8 +151,10 @@ class Apriori(object):
                 if conf > self.confidence:
                     self.assocrules.append((lhs, rhs, conf, supp))
 
-    def generateOutput(self):
-        with open("output.txt", "w") as f:
+    def generateOutput(self, output_file):
+        """ pretty prints the frequent itemsets and association mining rules
+            in the output file """
+        with open(output_file, "w") as f:
             with stdout_redirected(f):
                 print "==Frequent itemsets (min_sup=%.2f%%)" % (100 * self.threshold)
                 sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
@@ -160,18 +170,20 @@ class Apriori(object):
                                   "%.2f%%" % (100 * conf), "%.2f%%" % (100 * supp)))
                 print tabulate(table, headers=["LHS", "", "RHS", "Confidence", "Support"], tablefmt="grid")
 
-    def getReadableContent(self, value):
-        return self.valueMap[value] + " = " + value
-
+### Main driver
 if __name__ == "__main__":
+    filename = raw_input("File (leave blank to use INTEGRATED_DATASET.csv): ").strip()
     threshold = float(raw_input("Enter support(0.07): "))
     confidence = float(raw_input("Enter confidence(0.5): "))
 
+    if filename and filename != "INTEGRATED_DATASET.csv":
+        print "Please use the integrated dataset to run this program"
+        sys.exit()
+
     createDatabase("INTEGRATED-DATASET.csv")
-    apriori = Apriori(dbfile="data.db", dbname="school",
-                      confidence=confidence, threshold=threshold,
-                      categories=["overall_grade", "env_grade", "perf_grade"])
+    apriori = Apriori(dbfile="data.db", dbname="school", confidence=confidence, threshold=threshold,
+                      categories=["overall_grade", "env_grade", "perf_grade", "progress_grade"])
     apriori.generateFrequentItemSets()
     apriori.buildAssociationRules()
-    apriori.generateOutput()
-    print "File generated as output.txt"
+    apriori.generateOutput("output.txt")
+    print "Rules and frequent itemsets generated in output.txt"
