@@ -1,18 +1,33 @@
+#!/usr/bin/python
+
 import sqlite3
-from itertools import permutations, combinations
+from itertools import combinations
 import operator
 from tabulate import tabulate
+import sys
+from contextlib import contextmanager
+
+### Helpful decorator to redirect output to file
+@contextmanager
+def stdout_redirected(new_stdout):
+    save_stdout = sys.stdout
+    sys.stdout = new_stdout
+    try:
+        yield None
+    finally:
+        sys.stdout = save_stdout
 
 class Apriori(object):
-    def __init__(self, dbfile, dbname, categories):
+    def __init__(self, dbfile, dbname, categories, threshold, confidence):
         self.conn = sqlite3.connect(dbfile)
         self.dbname = dbname
         self.columns = categories
         self.categoryMap, self.valueMap = self.initMapping()
-        self.support = 100 # 10%
+        self.threshold = threshold
         self.frequentSets = {}
         self.totalSize = self.getTotalCount()[0]
-        self.confidence = 0.5
+        self.support = int(threshold * self.totalSize)
+        self.confidence = confidence
         self.assocrules = []
 
     def getTotalCount(self):
@@ -103,7 +118,6 @@ class Apriori(object):
             t = tuple(s)
             self.frequentSets[t] = self.getCount(t)[0]
 
-
     def generateFrequentItemSets(self):
         candidateSet = map(lambda x: set([x]), self.valueMap.keys())
         currentSize = 2
@@ -128,32 +142,34 @@ class Apriori(object):
                 if conf > self.confidence:
                     self.assocrules.append((lhs, rhs, conf, supp))
 
+    def generateOutput(self):
+        with open("output.txt", "w") as f:
+            with stdout_redirected(f):
+                print "==Frequent itemsets (min_sup=%.2f%%)" % (100 * self.threshold)
+                sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
+                table = ((",".join(map(self.getReadableContent, s)), count, '%.2f%%' % (count*100/float(self.totalSize))) for s, count in sortedSets)
+                print tabulate(table, headers=["ItemSets", "Count", "Support"], tablefmt="grid")
 
-    def printFrequentItemSets(self):
-        print "==Frequent itemsets (min_sup=70%)"
-        sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
-        table = ((",".join(map(self.getReadableContent, s)), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
-        print tabulate(table, headers=["ItemSets", "Count", "Support (%)"])
-
-    def printAssociationRules(self):
-        print "\n\n==High-confidence association rules (min_conf=%.2f%%)" % (100 * self.confidence)
-        sortedRules = sorted(self.assocrules, key=operator.itemgetter(2), reverse=True)
-        table = []
-        for lhs, rhs, conf, supp in sortedRules:
-            l = map(self.getReadableContent, lhs)
-            table.append((",".join(l), "=>", self.getReadableContent(rhs),
-                          "%.2f%%" % (100 * conf), "%.2f%%" % (100 * supp)))
-        print tabulate(table, headers=["LHS", "", "RHS", "Confidence", "Support"])
+                print "\n\n==High-confidence association rules (min_conf=%.2f%%)" % (100 * self.confidence)
+                sortedRules = sorted(self.assocrules, key=operator.itemgetter(2), reverse=True)
+                table = []
+                for lhs, rhs, conf, supp in sortedRules:
+                    l = map(self.getReadableContent, lhs)
+                    table.append((",".join(l), "=>", self.getReadableContent(rhs),
+                                  "%.2f%%" % (100 * conf), "%.2f%%" % (100 * supp)))
+                print tabulate(table, headers=["LHS", "", "RHS", "Confidence", "Support"], tablefmt="grid")
 
     def getReadableContent(self, value):
         return self.valueMap[value] + " = " + value
 
 if __name__ == "__main__":
+    threshold = float(raw_input("Enter support(0.07): "))
+    confidence = float(raw_input("Enter confidence(0.5): "))
     apriori = Apriori(dbfile="data.db", dbname="school",
+                      confidence=confidence, threshold=threshold,
                       categories=["overall_grade", "env_grade", "perf_grade"])
 
     apriori.generateFrequentItemSets()
-    apriori.printFrequentItemSets()
     apriori.buildAssociationRules()
-    apriori.printAssociationRules()
-
+    apriori.generateOutput()
+    print "File generated as output.txt"
