@@ -11,7 +11,10 @@ class Apriori(object):
         self.categoryMap, self.valueMap = self.initMapping()
         self.support = 100 # 10%
         self.frequentSets = {}
-        self.totalSize = 1200
+        self.totalSize = self.getTotalCount()[0]
+
+    def getTotalCount(self):
+        return self.runFetchOne("select count(*) from %s" % self.dbname)
 
     def initMapping(self):
         categoryMap, valueMap = {}, {}
@@ -100,7 +103,7 @@ class Apriori(object):
 
     def printFrequentItemSets(self):
         sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
-        table = (("-".join(s), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
+        table = ((",".join(s), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
         print tabulate(table, headers=["ItemSets", "Count", "Support (%)"])
 
     def generateFrequentItemSets(self):
