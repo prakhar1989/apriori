@@ -1,5 +1,6 @@
 import sqlite3
 import csv
+import os
 
 def readFile(filename):
     conn = sqlite3.connect('data.db')
@@ -26,6 +27,13 @@ def setup():
     conn.commit()
     conn.close()
 
+def createDatabase(filename):
+    try:
+        setup()
+    except sqlite3.OperationalError:
+        os.remove('data.db')
+        setup()
+        readFile(filename)
+
 if __name__ == '__main__':
-    setup()
-    readFile('INTEGRATED-DATASET.csv')
+    createDatabase('INTEGRATED-DATASET.csv')

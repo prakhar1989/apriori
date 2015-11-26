@@ -6,6 +6,7 @@ import operator
 from tabulate import tabulate
 import sys
 from contextlib import contextmanager
+from dataloader import createDatabase
 
 ### Helpful decorator to redirect output to file
 @contextmanager
@@ -165,10 +166,11 @@ class Apriori(object):
 if __name__ == "__main__":
     threshold = float(raw_input("Enter support(0.07): "))
     confidence = float(raw_input("Enter confidence(0.5): "))
+
+    createDatabase("INTEGRATED-DATASET.csv")
     apriori = Apriori(dbfile="data.db", dbname="school",
                       confidence=confidence, threshold=threshold,
                       categories=["overall_grade", "env_grade", "perf_grade"])
-
     apriori.generateFrequentItemSets()
     apriori.buildAssociationRules()
     apriori.generateOutput()
