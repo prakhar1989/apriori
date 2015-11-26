@@ -11,6 +11,7 @@ class Apriori(object):
         self.categoryMap, self.valueMap = self.initMapping()
         self.support = 100 # 10%
         self.frequentSets = {}
+        self.totalSize = 1200
 
     def initMapping(self):
         categoryMap, valueMap = {}, {}
@@ -99,8 +100,8 @@ class Apriori(object):
 
     def printFrequentItemSets(self):
         sortedSets = sorted(self.frequentSets.items(), key=operator.itemgetter(1), reverse=True)
-        for s, count in sortedSets:
-            print "-".join(s), count
+        table = (("-".join(s), count, '%.2f' % (count*100/float(self.totalSize))) for s, count in sortedSets)
+        print tabulate(table, headers=["ItemSets", "Count", "Support (%)"])
 
     def generateFrequentItemSets(self):
         candidateSet = map(lambda x: set([x]), self.valueMap.keys())
@@ -108,7 +109,6 @@ class Apriori(object):
         while len(candidateSet):
             frequentSet = self.getFrequentItemSets(candidateSet)
             self.saveFrequentSet(frequentSet)
-            print "Frequent item of size:", len(frequentSet)
             candidateSet = self.getNextCandidates(frequentSet, currentSize)
             currentSize += 1
 

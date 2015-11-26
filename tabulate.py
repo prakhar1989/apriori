@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
+from __future__ import unicode_literals
+from collections import namedtuple, Iterable
+from platform import python_version_tuple
+import re
+
 
 """
 This tabulate library is written by Sergey Astanin.
@@ -26,12 +32,6 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
 """Pretty-print tabular data."""
-
-from __future__ import print_function
-from __future__ import unicode_literals
-from collections import namedtuple, Iterable
-from platform import python_version_tuple
-import re
 
 
 if python_version_tuple()[0] < "3":
