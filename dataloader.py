@@ -28,4 +28,4 @@ def setup():
 
 if __name__ == '__main__':
     setup()
-    readFile('school_report.csv')
+    readFile('INTEGRATED-DATASET.csv')
