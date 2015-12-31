@@ -1,13 +1,5 @@
----
-title:  Association Rule Mining
-author: Assignment 3 - Extracting associating rules using Apriori Algorithm
-geometry: margin=1.15in
-header-includes:
-    - \usepackage{fancyhdr}
-    - \pagestyle{fancy}
-    - \fancyhead[CO,CE]{Advanced Database Systems - Fall 2015}
-    - \fancyhead[LE,RO]{Nov 26, 2015}
----
+Apriori Algorithm
+===
 
 ### Team Members
 Prakhar Srivastav (ps2894)
